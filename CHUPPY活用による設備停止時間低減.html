@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHUPPY効果シミュレーター</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDECEA;--surf:#F7F6F4;--white:#FFF;
+  --ink:#1A1816;--ink2:#3D3A36;--ink3:#7A7570;--ink4:#B0ACA6;
+  --bdr:#D8D5D0;--bdr2:#EBEBEB;
+  --cyan:#3A9EBF;--cyan-b:#E4F5FA;--cyan-d:#1A6F8A;
+  --green:#3D8C22;--green-b:#E8F5E0;
+  --red:#C42B2B;--red-b:#FAE8E8;
+  --amber:#C06000;--amber-b:#FAF0DC;
+  --r:14px;--rm:10px;--rs:6px;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Noto Sans JP',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.65;}
+.page{max-width:1060px;margin:0 auto;padding:28px 20px 64px;}
+
+/* ── TITLE ── */
+.title-block{margin-bottom:24px;}
+.title-main{font-size:clamp(22px,4vw,36px);font-weight:700;color:var(--ink);letter-spacing:-.5px;line-height:1.2;}
+.title-sub{font-size:12px;color:var(--ink3);margin-top:6px;font-family:var(--mono);}
+
+/* ── SEC HEADER ── */
+.sh{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ink3);display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.sh::after{content:'';flex:1;height:1px;background:var(--bdr);}
+
+/* ── 2025年度実績 ── */
+.jisseki-wrap{
+  display:grid;grid-template-columns:1fr 1fr;gap:16px;
+  margin-bottom:28px;
+}
+@media(max-width:640px){.jisseki-wrap{grid-template-columns:1fr;}}
+.jisseki-card{
+  background:var(--ink);border-radius:var(--r);
+  padding:24px 24px 20px;position:relative;overflow:hidden;
+}
+.jisseki-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:4px;
+}
+.jisseki-card.s4::before{background:var(--cyan);}
+.jisseki-card.sk::before{background:var(--green);}
+.jc-label{
+  font-size:10px;font-family:var(--mono);letter-spacing:2px;text-transform:uppercase;
+  margin-bottom:10px;display:inline-block;padding:3px 10px;border-radius:4px;
+}
+.s4 .jc-label{background:rgba(58,158,191,.2);color:#7DD4EC;}
+.sk .jc-label{background:rgba(61,140,34,.2);color:#7EE34E;}
+.jc-title{font-size:16px;font-weight:700;color:#fff;margin-bottom:16px;}
+.jc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.jc-item{background:rgba(255,255,255,.06);border-radius:var(--rs);padding:12px 14px;}
+.jc-item-label{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:5px;font-family:var(--mono);}
+.jc-item-val{font-family:var(--mono);font-weight:600;line-height:1;}
+.jc-item-unit{font-size:10px;color:rgba(255,255,255,.4);margin-top:3px;}
+.jc-item.big .jc-item-val{font-size:30px;}
+.jc-item.mid .jc-item-val{font-size:22px;}
+.s4 .jc-item.big .jc-item-val{color:#3ECBF8;}
+.s4 .jc-item.mid .jc-item-val{color:#7DD4EC;}
+.sk .jc-item.big .jc-item-val{color:#7EE34E;}
+.sk .jc-item.mid .jc-item-val{color:#6ECC48;}
+.jc-formula{
+  margin-top:12px;padding:10px 14px;border-radius:var(--rs);
+  font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.5);
+  background:rgba(255,255,255,.05);
+}
+.s4 .jc-formula span{color:#7DD4EC;}
+.sk .jc-formula span{color:#7EE34E;}
+
+/* ── FORMULA ── */
+.formula-wrap{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px;}
+@media(max-width:640px){.formula-wrap{grid-template-columns:1fr;}}
+.fb{background:var(--ink);border-radius:var(--rm);padding:18px 20px;}
+.fb-lbl{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.dot8{width:8px;height:8px;border-radius:50%;}
+.fb-body{font-family:var(--mono);font-size:12px;color:#fff;line-height:2.5;}
+.fh{padding:2px 7px;border-radius:3px;font-weight:600;}
+.fh.c{background:rgba(58,158,191,.22);color:#7DD4EC;}
+.fh.g{background:rgba(74,155,42,.2);color:#8ED46A;}
+.fh.o{background:rgba(192,96,0,.22);color:#F0B429;}
+.fh.fix{background:rgba(255,255,255,.1);color:rgba(255,255,255,.85);}
+.fb-note{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08);font-size:10px;color:rgba(255,255,255,.35);font-family:var(--mono);line-height:1.9;}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:0;margin-bottom:20px;border-radius:var(--r);overflow:hidden;border:2px solid var(--ink);}
+.tab-btn{flex:1;padding:13px 16px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:var(--white);color:var(--ink3);transition:.2s;font-family:var(--sans);line-height:1.4;text-align:center;border-right:2px solid var(--ink);}
+.tab-btn:last-child{border-right:none;}
+.tab-btn.active{background:var(--ink);color:#fff;}
+.tab-btn .tsub{font-size:9px;font-weight:400;opacity:.7;display:block;margin-top:2px;font-family:var(--mono);}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* ── SLIDERS ── */
+.slider-panel{background:var(--white);border-radius:var(--r);border:.5px solid var(--bdr);padding:18px 22px;margin-bottom:22px;}
+.sl-row{display:grid;grid-template-columns:190px 1fr 110px;align-items:center;gap:12px;padding:10px 0;border-bottom:.5px solid var(--bdr2);}
+.sl-row:last-child{border-bottom:none;}
+.sl-row.dept-row{background:rgba(192,96,0,.04);border-left:3px solid var(--amber);padding-left:10px;border-radius:0 var(--rs) var(--rs) 0;}
+.sl-name{font-size:12px;font-weight:700;color:var(--ink2);}
+.sl-name.amber{color:var(--amber);}
+.sl-sub{font-size:10px;color:var(--ink3);margin-top:2px;}
+input[type=range]{width:100%;height:4px;-webkit-appearance:none;appearance:none;background:var(--bdr2);border-radius:2px;cursor:pointer;outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--cyan);border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.15);}
+.dept-row input[type=range]::-webkit-slider-thumb{background:var(--amber);}
+.sl-val{font-family:var(--mono);font-size:16px;font-weight:600;color:var(--cyan);text-align:right;}
+.sl-val.amber{color:var(--amber);}
+.sl-val small{font-size:10px;color:var(--ink3);font-weight:400;}
+
+/* ── 現状 → 活用後 ── */
+.compare-block{margin-bottom:22px;}
+.compare-grid{display:grid;grid-template-columns:1fr 60px 1fr;gap:0;align-items:stretch;border-radius:var(--r);overflow:hidden;border:0.5px solid var(--bdr);}
+.cg-before{background:var(--red-b);}
+.cg-arrow{background:var(--ink);display:flex;align-items:center;justify-content:center;font-size:22px;color:rgba(255,255,255,.5);}
+.cg-after{background:var(--cyan-b);}
+.cg-head{padding:12px 18px;font-weight:700;font-size:12px;}
+.cg-before .cg-head{color:var(--red);border-bottom:1px solid rgba(196,43,43,.15);}
+.cg-after  .cg-head{color:var(--cyan-d);border-bottom:1px solid rgba(58,158,191,.15);}
+.cg-body{padding:14px 18px;display:flex;flex-direction:column;gap:10px;}
+.cg-row{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.cg-row-label{font-size:11px;color:var(--ink3);font-weight:700;}
+.cg-row-val{font-family:var(--mono);font-size:16px;font-weight:600;}
+.cg-before .cg-row-val{color:var(--red);}
+.cg-after  .cg-row-val{color:var(--cyan-d);}
+.cg-row-val.big{font-size:24px;}
+.cg-delta{font-family:var(--mono);font-size:11px;color:var(--green);font-weight:700;}
+
+/* MTTR比較 */
+.mttr-bar{
+  margin:12px 18px;height:12px;background:rgba(0,0,0,.06);
+  border-radius:6px;overflow:hidden;position:relative;
+}
+.mttr-bar-fill{height:100%;border-radius:6px;transition:width .35s;}
+.cg-before .mttr-bar-fill{background:var(--red);}
+.cg-after  .mttr-bar-fill{background:var(--cyan);}
+
+/* ── 余力創出 → 再発防止 ── */
+.yoryoku-block{
+  background:var(--ink);border-radius:var(--r);
+  padding:24px 26px;margin-bottom:22px;
+}
+.yoryoku-title{font-size:14px;font-weight:700;color:#fff;margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+.yoryoku-title::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.1);}
+
+.yoryoku-flow{display:grid;grid-template-columns:1fr 24px 1fr 24px 1fr 24px 1fr;align-items:center;gap:4px;margin-bottom:20px;}
+@media(max-width:640px){.yoryoku-flow{grid-template-columns:1fr;}}
+.yf-box{background:rgba(255,255,255,.07);border-radius:var(--rm);padding:14px 12px;text-align:center;}
+.yf-num{font-family:var(--mono);font-size:22px;font-weight:600;line-height:1;margin-bottom:4px;}
+.yf-unit{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:6px;}
+.yf-label{font-size:11px;font-weight:700;color:rgba(255,255,255,.75);}
+.yf-sub{font-size:10px;color:rgba(255,255,255,.4);margin-top:3px;}
+.yf-arr{font-size:20px;color:rgba(255,255,255,.3);text-align:center;}
+
+.yoryoku-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:4px;}
+.ys{background:rgba(255,255,255,.06);border-radius:var(--rs);padding:12px 14px;text-align:center;}
+.ys-label{font-size:9px;color:rgba(255,255,255,.4);letter-spacing:1px;text-transform:uppercase;font-family:var(--mono);margin-bottom:6px;}
+.ys-val{font-family:var(--mono);font-size:20px;font-weight:600;line-height:1;}
+.ys-unit{font-size:10px;color:rgba(255,255,255,.35);margin-top:3px;}
+.ys.c .ys-val{color:#3ECBF8;}
+.ys.g .ys-val{color:#7EE34E;}
+.ys.a .ys-val{color:#F0B429;}
+.ys.p .ys-val{color:#BB88FF;}
+
+/* 再発防止callout */
+.saihatsucallout{
+  background:var(--green-b);border-left:4px solid var(--green);
+  border-radius:0 var(--rm) var(--rm) 0;
+  padding:14px 18px;font-size:12px;color:var(--ink2);line-height:1.9;
+}
+.saihatsucallout strong{color:var(--ink);}
+
+/* 全社展開 dept box */
+.dept-box{background:var(--amber-b);border:1.5px solid var(--amber);border-radius:var(--rm);padding:14px 20px;margin-bottom:18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.dept-box-lbl{font-size:11px;font-weight:700;color:var(--amber);}
+.dept-box-val{font-family:var(--mono);font-size:18px;font-weight:600;color:var(--amber);}
+.dept-box-note{font-size:11px;color:var(--ink3);flex:1;}
+
+.foot{text-align:center;font-family:var(--mono);font-size:10px;color:var(--ink4);letter-spacing:1px;margin-top:24px;}
+@media print{body{background:#fff;}.page{padding:12px;}input[type=range]{display:none;}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ① タイトル -->
+<div class="title-block">
+  <div class="title-main">CHUPPY効果シミュレーター</div>
+  <div class="title-sub">衣浦工場 鋳鍛設備課 | 未来工場キャラバン資料準拠（号口10分/件・全体17分/件）</div>
+</div>
+
+<!-- ② 2025年度実績 -->
+<div class="sh">2025年度 実績データ</div>
+<div class="jisseki-wrap">
+
+  <!-- 4係 -->
+  <div class="jisseki-card s4">
+    <div class="jc-label">鋳鍛設備課 4係</div>
+    <div class="jc-title">メンバー23人の現場実績</div>
+    <div class="jc-grid">
+      <div class="jc-item big">
+        <div class="jc-item-label">突発故障件数</div>
+        <div class="jc-item-val">166</div>
+        <div class="jc-item-unit">件 / 年</div>
+      </div>
+      <div class="jc-item big">
+        <div class="jc-item-label">MTTR（平均修理時間）</div>
+        <div class="jc-item-val">129</div>
+        <div class="jc-item-unit">分 / 件</div>
+      </div>
+      <div class="jc-item mid">
+        <div class="jc-item-label">設備停止時間合計</div>
+        <div class="jc-item-val">21,565</div>
+        <div class="jc-item-unit">分 / 年（359時間）</div>
+      </div>
+      <div class="jc-item mid">
+        <div class="jc-item-label">メンバー数</div>
+        <div class="jc-item-val">23</div>
+        <div class="jc-item-unit">人（最大利用人数）</div>
+      </div>
+    </div>
+    <div class="jc-formula">
+      MTTR = 21,565分 ÷ 166件 = <span>129分 / 件</span>
+    </div>
+  </div>
+
+  <!-- 鋳鍛設備課全体 -->
+  <div class="jisseki-card sk">
+    <div class="jc-label">鋳鍛設備課（全体）</div>
+    <div class="jc-title">課全体の年間実績</div>
+    <div class="jc-grid">
+      <div class="jc-item big">
+        <div class="jc-item-label">突発故障件数</div>
+        <div class="jc-item-val">1,075</div>
+        <div class="jc-item-unit">件 / 年</div>
+      </div>
+      <div class="jc-item big">
+        <div class="jc-item-label">MTTR（平均修理時間）</div>
+        <div class="jc-item-val">122.2</div>
+        <div class="jc-item-unit">分 / 件</div>
+      </div>
+      <div class="jc-item mid">
+        <div class="jc-item-label">設備停止時間合計</div>
+        <div class="jc-item-val">131,369</div>
+        <div class="jc-item-unit">分 / 年（2,189時間）</div>
+      </div>
+      <div class="jc-item mid">
+        <div class="jc-item-label">MTTRの内訳</div>
+        <div class="jc-item-val" style="font-size:14px">実作業≈112分<br>情報探索≈10分</div>
+        <div class="jc-item-unit">CHUPPYが削れるのは情報探索のみ</div>
+      </div>
+    </div>
+    <div class="jc-formula">
+      MTTR = 131,369分 ÷ 1,075件 = <span>122.2分 / 件</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ③ 計算公式 -->
+<div class="sh">CHUPPY活用によるMTTR低減シミュレーター 計算公式</div>
+<div class="formula-wrap">
+  <div class="fb">
+    <div class="fb-lbl" style="color:rgba(58,158,191,.8)"><div class="dot8" style="background:var(--cyan)"></div>設備停止時間 低減（分 / 年）</div>
+    <div class="fb-body">
+      = <span class="fh fix">修理件数 / 年</span><br>
+      &emsp;× <span class="fh c">CHUPPY利用率</span><br>
+      &emsp;× <span class="fh c">10分 / 件</span><br>
+      &emsp;（号口3ステップ 情報探索ムダ合計）
+    </div>
+    <div class="fb-note">
+      ※ 号口 = 異常調査(5分) + 予備品調査(3分) + 処置(2分)<br>
+      ※ 設備停止中の時間に直結。MTTRが改善される<br>
+      ※ 利用率 = 利用人数 ÷ 最大人数
+    </div>
+  </div>
+  <div class="fb">
+    <div class="fb-lbl" style="color:rgba(110,204,72,.8)"><div class="dot8" style="background:var(--green)"></div>余力創出時間（修理関連時間 低減）（分 / 年）</div>
+    <div class="fb-body">
+      = <span class="fh fix">修理件数 / 年</span><br>
+      &emsp;× <span class="fh g">CHUPPY利用率</span><br>
+      &emsp;× <span class="fh g">7分 / 件</span><br>
+      &emsp;（故障解析2分 + 再発防止5分）
+    </div>
+    <div class="fb-note">
+      ※ 号口復帰後の活動。設備停止時間には含まない<br>
+      ※ 削減された時間＝再発防止に使える余力<br>
+      ※ 余力 → 再発防止活性化 → 故障件数低減へ
+    </div>
+  </div>
+</div>
+
+<!-- ④ タブ + スライダー + 現状/活用後 + 余力 -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('s4')">
+    鋳鍛設備課 4係
+    <span class="tsub">166件 ／ MTTR 129分 ／ 23人</span>
+  </button>
+  <button class="tab-btn" onclick="switchTab('sk')">
+    鋳鍛設備課（全体）
+    <span class="tsub">1,075件 ／ MTTR 122.2分</span>
+  </button>
+  <button class="tab-btn" onclick="switchTab('zs')">
+    全社展開
+    <span class="tsub">利用部署数 × 件数</span>
+  </button>
+</div>
+
+
+<!-- ═══ TAB: 4係 ═══ -->
+<div class="tab-panel active" id="panel-s4">
+
+  <!-- スライダー -->
+  <div class="sh">パラメーター設定</div>
+  <div class="slider-panel">
+    <div class="sl-row">
+      <div><div class="sl-name">修理件数</div><div class="sl-sub">現状実績: 166件/年（4係）</div></div>
+      <input type="range" id="s4-c" min="50" max="500" step="1" value="166" oninput="calc4()">
+      <div class="sl-val"><span id="s4-vc">166</span><small> 件/年</small></div>
+    </div>
+    <div class="sl-row">
+      <div><div class="sl-name">CHUPPY利用人数</div><div class="sl-sub">現状: 0人　目標: 23人（全員）　最大: 23人 / 利用率 = 人数 ÷ 23人</div></div>
+      <input type="range" id="s4-u" min="0" max="23" step="1" value="0" oninput="calc4()">
+      <div class="sl-val"><span id="s4-vu">0</span><small> 人</small><br><small style="font-size:9px;color:var(--ink3)">（利用率 <span id="s4-vpct">0</span>%）</small></div>
+    </div>
+  </div>
+
+  <!-- 現状 → 活用後 -->
+  <div class="sh">現状　→　CHUPPY活用後の低減時間 ＝ 余力創出時間</div>
+  <div class="compare-block">
+    <div class="compare-grid">
+      <div class="cg-before">
+        <div class="cg-head">⚠ 現状（CHUPPYなし）</div>
+        <div class="cg-body">
+          <div class="cg-row"><span class="cg-row-label">突発故障件数</span><span class="cg-row-val big">166</span></div>
+          <div class="cg-row"><span class="cg-row-label">MTTR</span><span class="cg-row-val big">129<small style="font-size:13px">分/件</small></span></div>
+          <div class="cg-row"><span class="cg-row-label">設備停止時間</span><span class="cg-row-val">21,565分/年</span></div>
+          <div class="cg-row"><span class="cg-row-label">　</span><span class="cg-row-val" style="font-size:12px">（359時間）</span></div>
+        </div>
+        <div class="mttr-bar"><div class="mttr-bar-fill" style="width:100%"></div></div>
+        <div style="padding:0 18px 12px;font-size:10px;color:var(--red);">MTTR 129分 = 実作業約119分 + 情報探索約10分</div>
+      </div>
+      <div class="cg-arrow">→</div>
+      <div class="cg-after">
+        <div class="cg-head">✦ CHUPPY活用後</div>
+        <div class="cg-body">
+          <div class="cg-row"><span class="cg-row-label">突発故障件数</span><span class="cg-row-val big" id="s4-cases-a">166<small style="font-size:13px">件</small></span></div>
+          <div class="cg-row"><span class="cg-row-label">MTTR 改善後</span><span class="cg-row-val big" id="s4-mttr-a">129.0<small style="font-size:13px">分/件</small></span></div>
+          <div class="cg-row"><span class="cg-row-label">設備停止時間</span><span class="cg-row-val" id="s4-stop-a">21,565分/年</span></div>
+          <div class="cg-row"><span class="cg-row-label">MTTR低減量</span><span class="cg-row-val" id="s4-mttr-d" style="color:var(--green)">▼ 0.0分/件</span></div>
+          <div class="cg-row"><span class="cg-row-label">設備停止時間 低減</span><span class="cg-row-val" id="s4-stop-red" style="color:var(--green);font-size:22px">0分/年</span></div>
+          <div class="cg-row"><span class="cg-row-label">設備停止時間 低減</span><span class="cg-row-val" id="s4-stop-red-hr" style="color:var(--green)">（0.0時間/年）</span></div>
+        </div>
+        <div class="mttr-bar"><div class="mttr-bar-fill" id="s4-mttr-bar" style="width:100%"></div></div>
+        <div style="padding:0 18px 12px;font-size:10px;color:var(--cyan-d);">CHUPPYが情報探索10分を削減 → MTTR短縮 → 設備停止時間低減</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 余力創出 -->
+  <div class="sh">余力創出時間 → 再発防止活動を活性化させる</div>
+  <div class="yoryoku-block">
+    <div class="yoryoku-title">余力創出により再発防止活動を活性化させる</div>
+    <div class="yoryoku-flow">
+      <div class="yf-box">
+        <div class="yf-num" id="s4-yf1" style="color:#3ECBF8">0</div>
+        <div class="yf-unit">分/年</div>
+        <div class="yf-label">設備停止時間<br>低減</div>
+        <div class="yf-sub">号口10分×利用率</div>
+      </div>
+      <div class="yf-arr">+</div>
+      <div class="yf-box">
+        <div class="yf-num" id="s4-yf2" style="color:#7EE34E">0</div>
+        <div class="yf-unit">分/年</div>
+        <div class="yf-label">余力創出時間</div>
+        <div class="yf-sub">7分×利用率</div>
+      </div>
+      <div class="yf-arr">→</div>
+      <div class="yf-box">
+        <div class="yf-num" id="s4-yf3" style="color:#BB88FF">0</div>
+        <div class="yf-unit">分/年</div>
+        <div class="yf-label">合計 低減時間</div>
+        <div class="yf-sub">17分×利用率</div>
+      </div>
+      <div class="yf-arr">→</div>
+      <div class="yf-box">
+        <div class="yf-num" id="s4-yf4" style="color:#F0B429">166</div>
+        <div class="yf-unit">件/年</div>
+        <div class="yf-label">故障件数<br>低減後</div>
+        <div class="yf-sub">利用率<span id="s4-vr2"></span>で低減</div>
+      </div>
+    </div>
+    <div class="yoryoku-stats">
+      <div class="ys c"><div class="ys-label">設備停止時間低減</div><div class="ys-val" id="s4-s-min">0</div><div class="ys-unit">分/年</div></div>
+      <div class="ys c"><div class="ys-label">設備停止時間低減</div><div class="ys-val" id="s4-s-hr">0.0</div><div class="ys-unit">時間/年</div></div>
+      <div class="ys g"><div class="ys-label">余力創出時間</div><div class="ys-val" id="s4-r-hr">0.0</div><div class="ys-unit">時間/年</div></div>
+      <div class="ys p"><div class="ys-label">合計低減時間</div><div class="ys-val" id="s4-t-hr">0.0</div><div class="ys-unit">時間/年</div></div>
+      <div class="ys a"><div class="ys-label">故障件数（低減後）</div><div class="ys-val" id="s4-c-r">166</div><div class="ys-unit">件/年</div></div>
+    </div>
+  </div>
+
+  <div class="saihatsucallout">
+    <strong>好循環：</strong>
+    CHUPPYが情報探索の<strong>10分/件を削減</strong> → 設備停止時間（MTTR）が短縮 →
+    さらに解析・再発防止の<strong>7分/件を余力に転換</strong> →
+    再発防止の深掘りが可能になり → <strong>突発故障件数が低減</strong> →
+    稼働率向上 → 残業による固定費削減へ
+  </div>
+</div>
+
+
+<!-- ═══ TAB: 鋳鍛設備課全体 ═══ -->
+<div class="tab-panel" id="panel-sk">
+
+  <div class="sh">パラメーター設定</div>
+  <div class="slider-panel">
+    <div class="sl-row">
+      <div><div class="sl-name">修理件数</div><div class="sl-sub">現状実績: 1,075件/年（鋳鍛設備課全体）</div></div>
+      <input type="range" id="sk-c" min="500" max="3000" step="25" value="1075" oninput="calcK()">
+      <div class="sl-val"><span id="sk-vc">1,075</span><small> 件/年</small></div>
+    </div>
+    <div class="sl-row">
+      <div><div class="sl-name">CHUPPY利用人数</div><div class="sl-sub">現状: 0人　目標: 40人　最大: 160人 / 利用率 = 人数 ÷ 160人</div></div>
+      <input type="range" id="sk-u" min="0" max="160" step="1" value="0" oninput="calcK()">
+      <div class="sl-val"><span id="sk-vu">0</span><small> 人</small><br><small style="font-size:9px;color:var(--ink3)">（利用率 <span id="sk-vpct">0</span>%）</small></div>
+    </div>
+  </div>
+
+  <div class="sh">現状　→　CHUPPY活用後の低減時間 ＝ 余力創出時間</div>
+  <div class="compare-block">
+    <div class="compare-grid">
+      <div class="cg-before">
+        <div class="cg-head">⚠ 現状（CHUPPYなし）</div>
+        <div class="cg-body">
+          <div class="cg-row"><span class="cg-row-label">突発故障件数</span><span class="cg-row-val big">1,075</span></div>
+          <div class="cg-row"><span class="cg-row-label">MTTR</span><span class="cg-row-val big">122.2<small style="font-size:13px">分/件</small></span></div>
+          <div class="cg-row"><span class="cg-row-label">設備停止時間</span><span class="cg-row-val">131,369分/年</span></div>
+          <div class="cg-row"><span class="cg-row-label">　</span><span class="cg-row-val" style="font-size:12px">（2,189時間）</span></div>
+        </div>
+        <div class="mttr-bar"><div class="mttr-bar-fill" style="width:100%"></div></div>
+        <div style="padding:0 18px 12px;font-size:10px;color:var(--red);">MTTR 122.2分 = 実作業約112分 + 情報探索約10分</div>
+      </div>
+      <div class="cg-arrow">→</div>
+      <div class="cg-after">
+        <div class="cg-head">✦ CHUPPY活用後</div>
+        <div class="cg-body">
+          <div class="cg-row"><span class="cg-row-label">突発故障件数</span><span class="cg-row-val big" id="sk-cases-a">1,075<small style="font-size:13px">件</small></span></div>
+          <div class="cg-row"><span class="cg-row-label">MTTR 改善後</span><span class="cg-row-val big" id="sk-mttr-a">122.2<small style="font-size:13px">分/件</small></span></div>
+          <div class="cg-row"><span class="cg-row-label">設備停止時間</span><span class="cg-row-val" id="sk-stop-a">131,369分/年</span></div>
+          <div class="cg-row"><span class="cg-row-label">MTTR低減量</span><span class="cg-row-val" id="sk-mttr-d" style="color:var(--green)">▼ 0.0分/件</span></div>
+          <div class="cg-row"><span class="cg-row-label">設備停止時間 低減</span><span class="cg-row-val" id="sk-stop-red" style="color:var(--green);font-size:22px">0分/年</span></div>
+          <div class="cg-row"><span class="cg-row-label">設備停止時間 低減</span><span class="cg-row-val" id="sk-stop-red-hr" style="color:var(--green)">（0.0時間/年）</span></div>
+        </div>
+        <div class="mttr-bar"><div class="mttr-bar-fill" id="sk-mttr-bar" style="width:100%"></div></div>
+        <div style="padding:0 18px 12px;font-size:10px;color:var(--cyan-d);">CHUPPYが情報探索10分を削減 → MTTR短縮 → 設備停止時間低減</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sh">余力創出時間 → 再発防止活動を活性化させる</div>
+  <div class="yoryoku-block">
+    <div class="yoryoku-title">余力創出により再発防止活動を活性化させる</div>
+    <div class="yoryoku-flow">
+      <div class="yf-box">
+        <div class="yf-num" id="sk-yf1" style="color:#3ECBF8">0</div>
+        <div class="yf-unit">分/年</div>
+        <div class="yf-label">設備停止時間<br>低減</div>
+        <div class="yf-sub">号口10分×利用率</div>
+      </div>
+      <div class="yf-arr">+</div>
+      <div class="yf-box">
+        <div class="yf-num" id="sk-yf2" style="color:#7EE34E">0</div>
+        <div class="yf-unit">分/年</div>
+        <div class="yf-label">余力創出時間</div>
+        <div class="yf-sub">7分×利用率</div>
+      </div>
+      <div class="yf-arr">→</div>
+      <div class="yf-box">
+        <div class="yf-num" id="sk-yf3" style="color:#BB88FF">0</div>
+        <div class="yf-unit">分/年</div>
+        <div class="yf-label">合計 低減時間</div>
+        <div class="yf-sub">17分×利用率</div>
+      </div>
+      <div class="yf-arr">→</div>
+      <div class="yf-box">
+        <div class="yf-num" id="sk-yf4" style="color:#F0B429">1,075</div>
+        <div class="yf-unit">件/年</div>
+        <div class="yf-label">故障件数<br>低減後</div>
+        <div class="yf-sub">利用率<span id="sk-vr2"></span>で低減</div>
+      </div>
+    </div>
+    <div class="yoryoku-stats">
+      <div class="ys c"><div class="ys-label">設備停止時間低減</div><div class="ys-val" id="sk-s-min">0</div><div class="ys-unit">分/年</div></div>
+      <div class="ys c"><div class="ys-label">設備停止時間低減</div><div class="ys-val" id="sk-s-hr">0.0</div><div class="ys-unit">時間/年</div></div>
+      <div class="ys g"><div class="ys-label">余力創出時間</div><div class="ys-val" id="sk-r-hr">0.0</div><div class="ys-unit">時間/年</div></div>
+      <div class="ys p"><div class="ys-label">合計低減時間</div><div class="ys-val" id="sk-t-hr">0.0</div><div class="ys-unit">時間/年</div></div>
+      <div class="ys a"><div class="ys-label">故障件数（低減後）</div><div class="ys-val" id="sk-c-r">1,075</div><div class="ys-unit">件/年</div></div>
+    </div>
+  </div>
+
+  <div class="saihatsucallout">
+    <strong>好循環：</strong>
+    CHUPPYが情報探索の<strong>10分/件を削減</strong> → 設備停止時間（MTTR）が短縮 →
+    さらに解析・再発防止の<strong>7分/件を余力に転換</strong> →
+    再発防止の深掘りが可能になり → <strong>突発故障件数が低減</strong> →
+    稼働率向上 → 残業による固定費削減へ
+  </div>
+</div>
+
+
+<!-- ═══ TAB: 全社展開 ═══ -->
+<div class="tab-panel" id="panel-zs">
+
+  <div class="sh">パラメーター設定</div>
+  <div class="slider-panel">
+    <div class="sl-row dept-row">
+      <div><div class="sl-name amber">利用部署数</div><div class="sl-sub">現状: 1部署（鋳鍛設備課）　最大: 300部署（衣浦工場全体）</div></div>
+      <input type="range" id="zs-d" min="1" max="300" step="1" value="1" oninput="calcZ()">
+      <div class="sl-val amber"><span id="zs-vd">1</span><small> 部署</small></div>
+    </div>
+    <div class="sl-row">
+      <div><div class="sl-name">1部署あたり修理件数</div><div class="sl-sub">参考: 4係166件 / 鋳鍛設備課全体1,075件</div></div>
+      <input type="range" id="zs-c" min="50" max="3000" step="25" value="166" oninput="calcZ()">
+      <div class="sl-val"><span id="zs-vc">166</span><small> 件/年</small></div>
+    </div>
+    <div class="sl-row">
+      <div><div class="sl-name">CHUPPY利用人数</div><div class="sl-sub">現状: 0人　目標: 40人　最大: 160人</div></div>
+      <input type="range" id="zs-u" min="0" max="160" step="1" value="0" oninput="calcZ()">
+      <div class="sl-val"><span id="zs-vu">0</span><small> 人</small><br><small style="font-size:9px;color:var(--ink3)">（利用率 <span id="zs-vpct">0</span>%）</small></div>
+    </div>
+  </div>
+
+  <div class="dept-box">
+    <div><div class="dept-box-lbl">現在の試算条件（利用部署 × 修理件数）</div><div class="dept-box-val" id="zs-dval">1部署 × 166件 = 166件/年</div></div>
+    <div class="dept-box-note" id="zs-dnote">全300部署に展開した場合、現在の300倍の効果になります。</div>
+  </div>
+
+  <div class="sh">現状　→　CHUPPY活用後の低減時間 ＝ 余力創出時間</div>
+  <div class="compare-block">
+    <div class="compare-grid">
+      <div class="cg-before">
+        <div class="cg-head">⚠ 現状（CHUPPYなし）</div>
+        <div class="cg-body">
+          <div class="cg-row"><span class="cg-row-label">突発故障件数（合計）</span><span class="cg-row-val big" id="zs-cases-b">166</span></div>
+          <div class="cg-row"><span class="cg-row-label">利用部署数</span><span class="cg-row-val" id="zs-dept-b">1部署</span></div>
+          <div class="cg-row"><span class="cg-row-label">1部署あたり修理件数</span><span class="cg-row-val" id="zs-case1-b">166件/年</span></div>
+        </div>
+      </div>
+      <div class="cg-arrow">→</div>
+      <div class="cg-after">
+        <div class="cg-head">✦ CHUPPY活用後</div>
+        <div class="cg-body">
+          <div class="cg-row"><span class="cg-row-label">故障件数（低減後）</span><span class="cg-row-val big" id="zs-cases-a">166</span></div>
+          <div class="cg-row"><span class="cg-row-label">設備停止時間 低減</span><span class="cg-row-val" id="zs-stop-val" style="color:var(--cyan-d)">0分/年</span></div>
+          <div class="cg-row"><span class="cg-row-label">余力創出時間</span><span class="cg-row-val" id="zs-rep-val" style="color:var(--green)">0分/年</span></div>
+          <div class="cg-row"><span class="cg-row-label">設備停止時間 低減</span><span class="cg-row-val" id="zs-stop-red" style="color:var(--green);font-size:22px">0分/年</span></div>
+          <div class="cg-row"><span class="cg-row-label">設備停止時間 低減</span><span class="cg-row-val" id="zs-stop-red-hr" style="color:var(--green)">（0.0時間/年）</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sh">余力創出時間 → 再発防止活動を活性化させる</div>
+  <div class="yoryoku-block">
+    <div class="yoryoku-title">余力創出により再発防止活動を活性化させる</div>
+    <div class="yoryoku-flow">
+      <div class="yf-box">
+        <div class="yf-num" id="zs-yf1" style="color:#3ECBF8">0</div>
+        <div class="yf-unit">分/年</div>
+        <div class="yf-label">設備停止時間<br>低減</div>
+        <div class="yf-sub">全利用部署合計</div>
+      </div>
+      <div class="yf-arr">+</div>
+      <div class="yf-box">
+        <div class="yf-num" id="zs-yf2" style="color:#7EE34E">0</div>
+        <div class="yf-unit">分/年</div>
+        <div class="yf-label">余力創出時間</div>
+        <div class="yf-sub">全利用部署合計</div>
+      </div>
+      <div class="yf-arr">→</div>
+      <div class="yf-box">
+        <div class="yf-num" id="zs-yf3" style="color:#BB88FF">0</div>
+        <div class="yf-unit">分/年</div>
+        <div class="yf-label">合計 低減時間</div>
+        <div class="yf-sub">全利用部署合計</div>
+      </div>
+      <div class="yf-arr">→</div>
+      <div class="yf-box">
+        <div class="yf-num" id="zs-yf4" style="color:#F0B429">166</div>
+        <div class="yf-unit">件/年</div>
+        <div class="yf-label">故障件数<br>低減後</div>
+        <div class="yf-sub">全部署合計</div>
+      </div>
+    </div>
+    <div class="yoryoku-stats">
+      <div class="ys c"><div class="ys-label">設備停止時間低減</div><div class="ys-val" id="zs-s-min">0</div><div class="ys-unit">分/年（全部署）</div></div>
+      <div class="ys c"><div class="ys-label">設備停止時間低減</div><div class="ys-val" id="zs-s-hr">0.0</div><div class="ys-unit">時間/年</div></div>
+      <div class="ys g"><div class="ys-label">余力創出時間</div><div class="ys-val" id="zs-r-hr">0.0</div><div class="ys-unit">時間/年</div></div>
+      <div class="ys p"><div class="ys-label">合計低減時間</div><div class="ys-val" id="zs-t-hr">0.0</div><div class="ys-unit">時間/年</div></div>
+      <div class="ys a"><div class="ys-label">故障件数（低減後）</div><div class="ys-val" id="zs-c-r">166</div><div class="ys-unit">件/年（全部署）</div></div>
+    </div>
+  </div>
+
+  <div class="saihatsucallout">
+    <strong>全社展開のポテンシャル：</strong>
+    利用部署数が増えるほど設備停止時間低減・余力創出の効果は比例して拡大。
+    衣浦工場300部署に展開した場合、工場全体の稼働率向上・固定費削減に直結します。
+  </div>
+</div>
+
+<div class="foot">CHUPPY効果シミュレーター | 衣浦工場 | 2025年度実績データ基準 | MTTR = 設備停止時間合計 ÷ 修理件数</div>
+</div>
+
+<script>
+const MU=160, MU4=23, MD=300;
+const SK_R=10, RK_R=7;
+const fmt=n=>Math.round(n).toLocaleString();
+const ff=(n,d=1)=>parseFloat(n.toFixed(d)).toString();
+const $=id=>document.getElementById(id);
+
+function switchTab(t){
+  const ts=['s4','sk','zs'];
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',ts[i]===t));
+  ts.forEach(id=>$('panel-'+id).classList.remove('active'));
+  $('panel-'+t).classList.add('active');
+}
+
+/* ── 4係 ── */
+function calc4(){
+  const users=+$('s4-u').value, cases=+$('s4-c').value;
+  const usage=users/MU4, bM=129;
+  const yrSt=cases*usage*SK_R, yrRp=cases*usage*RK_R, yrAll=yrSt+yrRp;
+  const nM=bM-usage*SK_R;
+  const up=Math.round(usage*100);
+  const mttrPct=(usage*SK_R)/bM*100;
+
+  $('s4-vc').textContent=cases.toLocaleString();
+  $('s4-vu').textContent=users; $('s4-vpct').textContent=up;
+
+  $('s4-cases-a').innerHTML=cases.toLocaleString()+'<small style="font-size:13px">件</small>';
+  $('s4-mttr-a').innerHTML=ff(nM)+'<small style="font-size:13px">分/件</small>';
+  $('s4-stop-a').textContent=fmt(Math.round(cases*bM-yrSt))+'分/年';
+  $('s4-mttr-d').textContent='▼ '+ff(usage*SK_R)+'分/件';
+  $('s4-stop-red').textContent=fmt(yrSt)+'分/年';
+  $('s4-stop-red-hr').textContent='（'+ff(yrSt/60)+'時間/年）';
+  $('s4-mttr-bar').style.width=Math.max(100-mttrPct,0)+'%';
+
+  $('s4-yf1').textContent=fmt(yrSt);
+  $('s4-yf2').textContent=fmt(yrRp);
+  $('s4-yf3').textContent=fmt(yrAll);
+  $('s4-yf4').textContent=cases.toLocaleString();
+  $('s4-s-min').textContent=fmt(yrSt);
+  $('s4-s-hr').textContent=ff(yrSt/60);
+  $('s4-r-hr').textContent=ff(yrRp/60);
+  $('s4-t-hr').textContent=ff(yrAll/60);
+  $('s4-c-r').textContent=cases.toLocaleString();
+}
+
+/* ── 鋳鍛設備課全体 ── */
+function calcK(){
+  const users=+$('sk-u').value, cases=+$('sk-c').value;
+  const usage=users/MU, bM=122.2;
+  const yrSt=cases*usage*SK_R, yrRp=cases*usage*RK_R, yrAll=yrSt+yrRp;
+  const nM=bM-usage*SK_R;
+  const up=Math.round(usage*100);
+  const mttrPct=(usage*SK_R)/bM*100;
+
+  $('sk-vc').textContent=cases.toLocaleString();
+  $('sk-vu').textContent=users; $('sk-vpct').textContent=up;
+
+  $('sk-cases-a').innerHTML=cases.toLocaleString()+'<small style="font-size:13px">件</small>';
+  $('sk-mttr-a').innerHTML=ff(nM)+'<small style="font-size:13px">分/件</small>';
+  $('sk-stop-a').textContent=fmt(Math.round(cases*bM-yrSt))+'分/年';
+  $('sk-mttr-d').textContent='▼ '+ff(usage*SK_R)+'分/件';
+  $('sk-stop-red').textContent=fmt(yrSt)+'分/年';
+  $('sk-stop-red-hr').textContent='（'+ff(yrSt/60)+'時間/年）';
+  $('sk-mttr-bar').style.width=Math.max(100-mttrPct,0)+'%';
+
+  $('sk-yf1').textContent=fmt(yrSt);
+  $('sk-yf2').textContent=fmt(yrRp);
+  $('sk-yf3').textContent=fmt(yrAll);
+  $('sk-yf4').textContent=cases.toLocaleString();
+  $('sk-s-min').textContent=fmt(yrSt);
+  $('sk-s-hr').textContent=ff(yrSt/60);
+  $('sk-r-hr').textContent=ff(yrRp/60);
+  $('sk-t-hr').textContent=ff(yrAll/60);
+  $('sk-c-r').textContent=cases.toLocaleString();
+}
+
+/* ── 全社展開 ── */
+function calcZ(){
+  const dept=+$('zs-d').value, cases=+$('zs-c').value;
+  const users=+$('zs-u').value;
+  const usage=users/MU, tc=cases*dept;
+  const yrSt=tc*usage*SK_R, yrRp=tc*usage*RK_R, yrAll=yrSt+yrRp;
+  const up=Math.round(usage*100);
+
+  $('zs-vd').textContent=dept; $('zs-vc').textContent=cases.toLocaleString();
+  $('zs-vu').textContent=users; $('zs-vpct').textContent=up;
+  $('zs-dval').textContent=`${dept}部署 × ${cases.toLocaleString()}件 = ${fmt(tc)}件/年`;
+  $('zs-dnote').textContent=dept>=300?'衣浦工場全300部署に展開中！効果は最大規模です。':`全300部署に展開した場合、現在の${Math.round(300/dept)}倍の効果になります。`;
+
+  $('zs-cases-b').textContent=fmt(tc);
+  $('zs-dept-b').textContent=dept+'部署';
+  $('zs-case1-b').textContent=cases.toLocaleString()+'件/年';
+  $('zs-cases-a').textContent=fmt(tc);
+  $('zs-stop-val').textContent=fmt(yrSt)+'分/年';
+  $('zs-rep-val').textContent=fmt(yrRp)+'分/年';
+  $('zs-stop-red').textContent=fmt(yrSt)+'分/年';
+  $('zs-stop-red-hr').textContent='（'+ff(yrSt/60)+'時間/年）';
+
+  $('zs-yf1').textContent=fmt(yrSt);
+  $('zs-yf2').textContent=fmt(yrRp);
+  $('zs-yf3').textContent=fmt(yrAll);
+  $('zs-yf4').textContent=fmt(tc);
+  $('zs-s-min').textContent=fmt(yrSt);
+  $('zs-s-hr').textContent=ff(yrSt/60);
+  $('zs-r-hr').textContent=ff(yrRp/60);
+  $('zs-t-hr').textContent=ff(yrAll/60);
+  $('zs-c-r').textContent=fmt(tc);
+}
+
+calc4(); calcK(); calcZ();
+</script>
+</body>
+</html>
